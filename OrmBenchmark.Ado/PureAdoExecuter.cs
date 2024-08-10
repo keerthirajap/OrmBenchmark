@@ -12,13 +12,15 @@ namespace OrmBenchmark.Ado.SystemDataSqlClient
     {
         private SqlConnection conn;
 
-        public string Name
+        public string TestName
         {
             get
             {
                 return "SystemDataSqlClient ADO (Pure)";
             }
         }
+
+        public string ORMName => "Insight Database";
 
         public void Init(string connectionStrong)
         {

@@ -33,6 +33,7 @@ namespace OrmBenchmark.ConsoleUI.NetCore
 
             bool warmUp = false;
 
+            //var benchmarker = new Benchmarker(connStr, 10);
             var benchmarker = new Benchmarker(connStr, 500);
 
             //benchmarker.RegisterOrmExecuter(new Ado.SystemDataSqlClient.PureAdoExecuter());
@@ -53,9 +54,11 @@ namespace OrmBenchmark.ConsoleUI.NetCore
             //benchmarker.RegisterOrmExecuter(new OrmToolkit.OrmToolkitTestExecuter());
             //////benchmarker.RegisterOrmExecuter(new EntityFramework.EntityFrameworkExecuter());
             //////benchmarker.RegisterOrmExecuter(new EntityFramework.EntityFrameworNoTrackingExecuter());
+
             //benchmarker.RegisterOrmExecuter(new InsightDatabase.InsightDatabaseExecuter());
-            //benchmarker.RegisterOrmExecuter(new InsightDatabase.InsightSingleDatabaseExecuter());
-            benchmarker.RegisterOrmExecuter(new InsightDatabase.InsightDatabaseConcurrencyStressTest());
+            benchmarker.RegisterOrmExecuter(new InsightDatabase.InsightSingleDatabaseExecuter());
+            //benchmarker.RegisterOrmExecuter(new InsightDatabase.InsightDatabaseConcurrencyStressTest());
+            //benchmarker.RegisterOrmExecuter(new InsightDatabase.BulkOperationsPerformanceTest());
 
             //benchmarker.RegisterOrmExecuter(new OrmLite.OrmLiteExecuter());
             //benchmarker.RegisterOrmExecuter(new OrmLite.OrmLiteNoQueryExecuter());
@@ -95,6 +98,9 @@ namespace OrmBenchmark.ConsoleUI.NetCore
             Console.WriteLine("\nPerformance of mapping 5000 rows to Dynamic objects in one iteration:");
             ShowResults(benchmarker.resultsForAllDynamicItems);
 
+            Console.WriteLine("\nPerformance of inserting 5000 rows iteration:");
+            ShowResults(benchmarker.resultsForMultipleInsert);
+
             Console.ReadLine();
         }
 
@@ -113,9 +119,9 @@ namespace OrmBenchmark.ConsoleUI.NetCore
                 Console.ForegroundColor = i < 3 ? ConsoleColor.Green : ConsoleColor.Gray;
 
                 if (showFirstRun)
-                    Console.WriteLine(string.Format("{0,2}-{1,-40} {2,5} ms (First run: {3,3} ms)", ++i, result.Name, result.ExecTime, result.FirstItemExecTime));
+                    Console.WriteLine(string.Format("{0,2}-{2} | {1,-60} {3,5} ms (First run: {4,3} ms)", ++i, result.TestName, result.ORMName, result.ExecTime, result.FirstItemExecTime));
                 else
-                    Console.WriteLine(string.Format("{0,2}-{1,-40} {2,5} ms", ++i, result.Name, result.ExecTime));
+                    Console.WriteLine(string.Format("{0,2}-{2} | {1,-60} {3,5} ms", ++i, result.TestName, result.ORMName, result.ExecTime));
             }
 
             Console.ForegroundColor = defaultColor;

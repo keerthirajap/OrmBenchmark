@@ -12,7 +12,8 @@
     {
         private SqlConnection conn;
 
-        public string Name => "Insight Database Concurrency Stress Test";
+        public string TestName => "Concurrency Stress Test";
+        public string ORMName => "Insight Database";
 
         public void Finish()
         {
@@ -22,88 +23,115 @@
         public IList<dynamic> GetAllItemsAsDynamic()
         {
             const int totalTasks = 100;
-            const int progressBarWidth = 50;
             var tasks = new List<Task<IList<dynamic>>>(totalTasks);
 
-            Console.Write("Progress: [");
-            Console.CursorLeft = progressBarWidth + 1;
-
-            var progress = new Progress<int>(percent =>
-            {
-                Console.SetCursorPosition(Console.CursorLeft - 1, Console.CursorTop);
-                Console.Write("#");
-            });
+            // Log the start of the method
+            Console.WriteLine($"{ORMName} | {TestName} - Starting GetAllItemsAsDynamic method...");
 
             for (int i = 0; i < totalTasks; i++)
             {
                 tasks.Add(Task.Run(() =>
                 {
-                    var result = conn.QuerySql<dynamic>("SELECT * FROM Posts").ToList();
-                    ((IProgress<int>)progress).Report(i + 1);
-                    return (IList<dynamic>)result; // Explicit cast to IList<dynamic>
+                    try
+                    {
+                        // Ensure connection is properly managed
+                        using (var localConn = new SqlConnection(conn.ConnectionString))
+                        {
+                            localConn.Open(); // Open the connection
+                            // Query the database and return the result
+                            var result = localConn.QuerySql<dynamic>("SELECT * FROM Posts").ToList();
+                            return (IList<dynamic>)result; // Cast result to IList<dynamic>
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log any exceptions
+                        Console.WriteLine($"{ORMName} | {TestName} - Task {Task.CurrentId} encountered an error: {ex.Message}");
+                        return new List<dynamic>(); // Return an empty list on error
+                    }
                 }));
             }
 
-            Task.WhenAll(tasks).Wait();
+            // Log before waiting for tasks to complete
+            Console.WriteLine("Waiting for all tasks to complete...");
 
-            Console.Write("] Done\n");
+            // Wait for all tasks to complete
+            var results = Task.WhenAll(tasks).Result;
 
-            return tasks.SelectMany(t => t.Result).ToList();
+            // Log after all tasks are complete
+            Console.WriteLine("All tasks completed.");
+
+            // Aggregate results from all tasks
+            var aggregatedResults = results.SelectMany(result => result).ToList();
+
+            // Log the result
+            Console.WriteLine(aggregatedResults.Any() ? "Results retrieved successfully." : "No results found.");
+
+            // Log the end of the method
+            Console.WriteLine($"{ORMName} | {TestName} - Ending GetAllItemsAsDynamic method.");
+
+            return aggregatedResults;
         }
 
         public async Task<IList<IPost>> GetAllItemsAsObjectAsync()
         {
             const int totalTasks = 100; // Number of tasks
-            const int progressBarWidth = 50; // Width of the progress bar
             var tasks = new List<Task<IList<IPost>>>(totalTasks);
-            var progress = new Progress<int>(percent =>
-            {
-                // Update progress bar safely
-                Console.SetCursorPosition(progressBarWidth + 12, Console.CursorTop);
-                Console.Write(new string('#', percent));
-            });
 
-            // Print the progress bar header
-            Console.Write("Progress: [");
-            Console.Write(new string(' ', progressBarWidth)); // Initialize the progress bar with spaces
-            Console.Write("]"); // Close the progress bar
-
-            // Move cursor to start of the progress bar area
-            Console.SetCursorPosition("Progress: [".Length, Console.CursorTop);
+            // Log the start of the method
+            Console.WriteLine($"{ORMName} | {TestName} - Starting GetAllItemsAsObjectAsync method...");
 
             for (int i = 0; i < totalTasks; i++)
             {
-                // Run tasks with separate connections
-                tasks.Add(Task.Run(() =>
+                tasks.Add(Task.Run(async () =>
                 {
-                    // Use a new connection for each task
-                    using (var localConn = new SqlConnection(conn.ConnectionString))
+                    try
                     {
-                        localConn.Open();
-                        // Query the database and return the result as IList<IPost>
-                        var result = localConn.QuerySql<Post>("SELECT * FROM Posts").ToList();
-                        return (IList<IPost>)result;
+                        using (var localConn = new SqlConnection(conn.ConnectionString))
+                        {
+                            await localConn.OpenAsync(); // Open the connection asynchronously
+
+                            // Log task start
+                            Console.WriteLine($"{ORMName} | {TestName} - Task {Task.CurrentId} started...");
+
+                            // Query the database and return the result
+                            var posts = await localConn.QuerySqlAsync<Post>("SELECT * FROM Posts");
+
+                            // Log the result retrieval
+                            Console.WriteLine($"{ORMName} | {TestName} - Task {Task.CurrentId} retrieved data.");
+
+                            // Convert the result to IList<IPost>
+                            return (IList<IPost>)posts.Cast<IPost>().ToList(); // Cast each Post to IPost and return as IList<IPost>
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log any exceptions
+                        Console.WriteLine($"{ORMName} | {TestName} - Task {Task.CurrentId} encountered an error: {ex.Message}");
+                        return new List<IPost>(); // Return an empty list on error
                     }
                 }));
             }
 
-            // Update progress as tasks complete
-            for (int i = 0; i < totalTasks; i++)
-            {
-                var completedTask = await Task.WhenAny(tasks); // Wait for any task to complete
-                tasks.Remove(completedTask); // Remove completed task from the list
-                ((IProgress<int>)progress).Report((i + 1) * progressBarWidth / totalTasks); // Report progress
-            }
+            // Log before waiting for tasks to complete
+            Console.WriteLine($"{ORMName} | {TestName} - Waiting for all tasks to complete...");
 
-            // Wait for all remaining tasks to complete
-            await Task.WhenAll(tasks);
+            // Wait for all tasks to complete
+            var results = await Task.WhenAll(tasks);
 
-            // Move cursor to new line after progress bar
-            Console.SetCursorPosition(0, Console.CursorTop);
-            Console.Write($"Progress: [{new string('#', progressBarWidth)}] Done\n"); // Complete the progress bar
+            // Log after all tasks are complete
+            Console.WriteLine($"{ORMName} | {TestName} - All tasks completed.");
 
             // Aggregate results from all tasks
-            return tasks.SelectMany(t => t.Result).ToList();
+            var aggregatedResults = results.SelectMany(result => result).ToList();
+
+            // Log the result
+            Console.WriteLine(aggregatedResults.Any() ? "Results retrieved successfully." : "No results found.");
+
+            // Log the end of the method
+            Console.WriteLine($"{ORMName} | {TestName} - Ending GetAllItemsAsObjectAsync method.");
+
+            return aggregatedResults;
         }
 
         public dynamic GetItemAsDynamic(int Id)
@@ -111,7 +139,7 @@
             using (var localConn = new SqlConnection(conn.ConnectionString))
             {
                 localConn.Open();
-                var result = localConn.QuerySql<dynamic>("SELECT * FROM Posts WHERE Id=@Id", new { Id }).FirstOrDefault();
+                var result = localConn.QuerySqlAsync<dynamic>("SELECT TOP 1 * FROM Posts WHERE Id=@Id", new { Id }).Result;
                 return result;
             }
         }
@@ -119,70 +147,63 @@
         public async Task<IPost> GetItemAsObjectAsync(int Id)
         {
             const int totalTasks = 10; // Number of tasks
-            const int progressBarWidth = 50; // Width of the progress bar
+
+            // Log the start of the method
+            Console.WriteLine($"{ORMName} | {TestName} - Starting GetItemAsObjectAsync method...");
 
             var tasks = new List<Task<IPost>>(totalTasks);
-
-            // Print the progress bar header with task count
-            Console.Write($"Running {totalTasks} tasks... ");
-            Console.Write("Progress: [");
-            Console.Write(new string(' ', progressBarWidth)); // Fill the progress bar with spaces
-            Console.Write("]"); // Close the progress bar
-
-            // Move the cursor to the start of the progress bar area
-            Console.SetCursorPosition(Console.CursorLeft - progressBarWidth, Console.CursorTop);
 
             // Start the tasks
             for (int i = 0; i < totalTasks; i++)
             {
                 tasks.Add(Task.Run(async () =>
                 {
-                    using (var localConn = new SqlConnection(conn.ConnectionString))
+                    try
                     {
-                        await localConn.OpenAsync(); // Open the connection asynchronously
+                        using (var localConn = new SqlConnection(conn.ConnectionString))
+                        {
+                            await localConn.OpenAsync(); // Open the connection asynchronously
 
-                        // Query the database and return the result as IPost
-                        var post = await localConn.QueryAsync<Post>("SELECT * FROM Posts WHERE Id = @Id", new { Id });
-                        return (IPost)post.FirstOrDefault(); // Cast Post to IPost
+                            // Log task start
+                            Console.WriteLine($"{ORMName} | {TestName} - Task {Task.CurrentId} started...");
+
+                            // Use QuerySqlAsync for raw SQL query
+                            var post = await localConn.QuerySqlAsync<Post>(
+                                "SELECT * FROM Posts WHERE Id = @Id", new { Id });
+
+                            // Log the result retrieval
+                            Console.WriteLine($"{ORMName} | {TestName} - Task {Task.CurrentId} retrieved data.");
+
+                            return (IPost)post.FirstOrDefault(); // Cast Post to IPost
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log any exceptions
+                        Console.WriteLine($"{ORMName} | {TestName} - Task {Task.CurrentId} encountered an error: {ex.Message}");
+                        return null;
                     }
                 }));
             }
 
-            // Monitor progress
-            var progress = new Progress<int>(percent =>
-            {
-                // Update the progress bar
-                Console.SetCursorPosition(Console.CursorLeft - progressBarWidth, Console.CursorTop);
-                int filledWidth = percent * progressBarWidth / 100;
-                Console.Write($"Progress: [");
-                Console.Write(new string('#', filledWidth));
-                Console.Write(new string(' ', progressBarWidth - filledWidth));
-                Console.Write("]");
-            });
-
-            for (int i = 0; i < totalTasks; i++)
-            {
-                // Wait for a task to complete
-                var completedTask = (Task<IPost>)await Task.WhenAny(tasks);
-                tasks.Remove(completedTask);
-
-                // Report progress
-                int percentComplete = (i + 1) * 100 / totalTasks;
-                ((IProgress<int>)progress).Report(percentComplete);
-            }
+            // Log before waiting for tasks to complete
+            Console.WriteLine($"{ORMName} | {TestName} - Waiting for all tasks to complete...");
 
             // Wait for all tasks to complete
-            await Task.WhenAll(tasks);
+            var results = await Task.WhenAll(tasks);
 
-            // Move cursor to a new line and print "Done"
-            Console.SetCursorPosition(0, Console.CursorTop);
-            Console.Write($"Running {totalTasks} tasks... ");
-            Console.Write("Progress: [");
-            Console.Write(new string('#', progressBarWidth)); // Complete the progress bar
-            Console.Write("] Done\n"); // Finish the progress
+            // Log after all tasks are complete
+            Console.WriteLine($"{ORMName} | {TestName} - All tasks completed.");
 
-            // Example of returning the first result (or aggregate results as needed)
-            return (await tasks.FirstOrDefault()) ?? null;
+            // Log the result
+            var firstResult = results.FirstOrDefault();
+            Console.WriteLine(firstResult != null ? "Result retrieved successfully." : "No result found.");
+
+            // Log the end of the method
+            Console.WriteLine($"{ORMName} | {TestName} - Ending GetItemAsObjectAsync method.");
+
+            // Return the first result (or aggregate results as needed)
+            return firstResult;
         }
 
         public void Init(string connectionString)

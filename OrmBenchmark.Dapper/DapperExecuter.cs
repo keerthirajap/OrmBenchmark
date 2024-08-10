@@ -10,15 +10,17 @@ namespace OrmBenchmark.Dapper
 {
     public class DapperExecuter : IOrmExecuter
     {
-        SqlConnection conn;
+        private SqlConnection conn;
 
-        public string Name
+        public string TestName
         {
             get
             {
                 return "Dapper Query (Non Buffered)";
             }
         }
+
+        public string ORMName => "Insight Database";
 
         public void Init(string connectionStrong)
         {

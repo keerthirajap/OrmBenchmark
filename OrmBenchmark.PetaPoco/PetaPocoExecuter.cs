@@ -9,15 +9,17 @@ namespace OrmBenchmark.PetaPoco
 {
     public class PetaPocoExecuter : IOrmExecuter
     {
-        Database petapoco;
+        private Database petapoco;
 
-        public string Name
+        public string TestName
         {
             get
             {
                 return "PetaPoco";
             }
         }
+
+        public string ORMName => "Insight Database";
 
         public void Init(string connectionStrong)
         {
@@ -51,6 +53,5 @@ namespace OrmBenchmark.PetaPoco
         {
             //petapoco.Close();
         }
-
     }
 }

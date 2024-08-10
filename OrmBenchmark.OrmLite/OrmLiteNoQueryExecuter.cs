@@ -10,16 +10,18 @@ namespace OrmBenchmark.OrmLite
 {
     public class OrmLiteNoQueryExecuter : IOrmExecuter
     {
-        IDbConnection conn;
-        OrmLiteConnectionFactory dbFactory;
+        private IDbConnection conn;
+        private OrmLiteConnectionFactory dbFactory;
 
-        public string Name
+        public string TestName
         {
             get
             {
                 return "Orm Lite (No Query)";
             }
         }
+
+        public string ORMName => "Insight Database";
 
         public void Init(string connectionStrong)
         {
@@ -28,7 +30,7 @@ namespace OrmBenchmark.OrmLite
         }
 
         public IPost GetItemAsObject(int Id)
-        {            
+        {
             return conn.SingleById<Post>(Id);
         }
 
@@ -83,10 +85,10 @@ namespace OrmBenchmark.OrmLite
 
             return conn.Select<dynamic>(q);
         }
+
         public void Finish()
         {
             conn.Close();
         }
-
     }
 }

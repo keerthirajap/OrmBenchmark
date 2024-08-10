@@ -4,6 +4,7 @@ using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace OrmBenchmark.Core
@@ -15,6 +16,9 @@ namespace OrmBenchmark.Core
         public List<BenchmarkResult> resultsForAllItems { get; set; }
         public List<BenchmarkResult> resultsForDynamicItem { get; set; }
         public List<BenchmarkResult> resultsForAllDynamicItems { get; set; }
+
+        public List<BenchmarkResult> resultsForMultipleInsert { get; set; }
+
         public List<BenchmarkResult> resultsWarmUp { get; set; }
         private int IterationCount { get; set; }
         private string ConnectionString { get; set; }
@@ -28,6 +32,7 @@ namespace OrmBenchmark.Core
             resultsForDynamicItem = new List<BenchmarkResult>();
             resultsForAllItems = new List<BenchmarkResult>();
             resultsForAllDynamicItems = new List<BenchmarkResult>();
+            resultsForMultipleInsert = new List<BenchmarkResult>();
             resultsWarmUp = new List<BenchmarkResult>();
         }
 
@@ -38,8 +43,6 @@ namespace OrmBenchmark.Core
 
         public async Task Run(bool warmUp = false)
         {
-            PrepareDatabase();
-
             results.Clear();
             resultsForDynamicItem.Clear();
             resultsForAllItems.Clear();
@@ -49,12 +52,20 @@ namespace OrmBenchmark.Core
             var rand = new Random();
             foreach (IOrmExecuter executer in executers.OrderBy(ignore => rand.Next()))
             {
-                Console.WriteLine($"\nRunning benchmark for {executer.Name}...");
+                PrepareDatabase();
+                Console.WriteLine($"\nRunning benchmark for {executer.TestName}...");
                 executer.Init(ConnectionString);
 
                 // Exception handling for each executer
                 try
                 {
+                    // Bulk Insert
+                    Stopwatch watchForMultipleInsertAsync = new Stopwatch();
+                    watchForMultipleInsertAsync.Start();
+                    await executer.MultipleInsertAsync(5000);
+                    watchForMultipleInsertAsync.Stop();
+                    resultsForMultipleInsert.Add(new BenchmarkResult { TestName = executer.TestName, ORMName = executer.ORMName, ExecTime = watchForMultipleInsertAsync.ElapsedMilliseconds });
+
                     // Warm-up
                     if (warmUp)
                     {
@@ -63,7 +74,7 @@ namespace OrmBenchmark.Core
                         await executer.GetItemAsObjectAsync(IterationCount + 1);
                         await executer.GetItemAsObjectAsync(IterationCount + 1);
                         watchForWaemUp.Stop();
-                        resultsWarmUp.Add(new BenchmarkResult { Name = executer.Name, ExecTime = watchForWaemUp.ElapsedMilliseconds });
+                        resultsWarmUp.Add(new BenchmarkResult { TestName = executer.TestName, ORMName = executer.ORMName, ExecTime = watchForWaemUp.ElapsedMilliseconds });
                     }
 
                     // Object
@@ -72,14 +83,14 @@ namespace OrmBenchmark.Core
                     for (int i = 1; i <= IterationCount; i++)
                     {
                         watch.Start();
-                        var obj = executer.GetItemAsObject(i);
+                        var obj = await executer.GetItemAsObjectAsync(i);
                         watch.Stop();
                         //if (obj?.Id != i)
                         //    throw new ApplicationException("Invalid object returned.");
                         if (i == 1)
                             firstItemExecTime = watch.ElapsedMilliseconds;
                     }
-                    results.Add(new BenchmarkResult { Name = executer.Name, ExecTime = watch.ElapsedMilliseconds, FirstItemExecTime = firstItemExecTime });
+                    results.Add(new BenchmarkResult { TestName = executer.TestName, ORMName = executer.ORMName, ExecTime = watch.ElapsedMilliseconds, FirstItemExecTime = firstItemExecTime });
 
                     // Dynamic
                     Stopwatch watchForDynamic = new Stopwatch();
@@ -94,7 +105,7 @@ namespace OrmBenchmark.Core
                         if (i == 1)
                             firstItemExecTime = watchForDynamic.ElapsedMilliseconds;
                     }
-                    resultsForDynamicItem.Add(new BenchmarkResult { Name = executer.Name, ExecTime = watchForDynamic.ElapsedMilliseconds, FirstItemExecTime = firstItemExecTime });
+                    resultsForDynamicItem.Add(new BenchmarkResult { TestName = executer.TestName, ORMName = executer.ORMName, ExecTime = watchForDynamic.ElapsedMilliseconds, FirstItemExecTime = firstItemExecTime });
 
                     // All Objects
                     Stopwatch watchForAllItems = new Stopwatch();
@@ -103,20 +114,30 @@ namespace OrmBenchmark.Core
                     var result = await executer.GetAllItemsAsObjectAsync();
 
                     watchForAllItems.Stop();
-                    resultsForAllItems.Add(new BenchmarkResult { Name = executer.Name, ExecTime = watchForAllItems.ElapsedMilliseconds });
+                    resultsForAllItems.Add(new BenchmarkResult { TestName = executer.TestName, ORMName = executer.ORMName, ExecTime = watchForAllItems.ElapsedMilliseconds });
 
                     // All Dynamics
                     Stopwatch watchForAllDynamicItems = new Stopwatch();
                     watchForAllDynamicItems.Start();
                     executer.GetAllItemsAsDynamic();
                     watchForAllDynamicItems.Stop();
-                    resultsForAllDynamicItems.Add(new BenchmarkResult { Name = executer.Name, ExecTime = watchForAllDynamicItems.ElapsedMilliseconds });
+                    resultsForAllDynamicItems.Add(new BenchmarkResult { TestName = executer.TestName, ORMName = executer.ORMName, ExecTime = watchForAllDynamicItems.ElapsedMilliseconds });
 
                     executer.Finish();
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error during {executer.Name} benchmark: {ex.Message}");
+                    //throw ex;
+                    Console.WriteLine($"Error during {executer.TestName} benchmark: {ex.Message}");
+                }
+                finally
+                {
+                    // Force a garbage collection for all generations
+                    GC.Collect();
+
+                    // Wait for the finalizer queue to be processed
+                    GC.WaitForPendingFinalizers();
+                    Thread.Sleep(1000);
                 }
             }
         }

@@ -5,20 +5,21 @@ using System.Text;
 using OrmBenchmark.Core;
 using PetaPoco;
 
-
 namespace OrmBenchmark.PetaPoco
 {
     public class PetaPocoFetchFastExecuter : IOrmExecuter
     {
-        Database petapoco;
+        private Database petapoco;
 
-        public string Name
+        public string TestName
         {
             get
             {
                 return "PetaPoco (Fetch Fast)";
             }
         }
+
+        public string ORMName => "Insight Database";
 
         public void Init(string connectionStrong)
         {
@@ -55,6 +56,5 @@ namespace OrmBenchmark.PetaPoco
         {
             //petapoco.Close();
         }
-
     }
 }

@@ -7,7 +7,9 @@ namespace OrmBenchmark.Core
 {
     public interface IOrmExecuter
     {
-        string Name { get; }
+        string TestName { get; }
+
+        string ORMName { get; }
 
         void Init(string connectionStrong);
 
@@ -21,7 +23,10 @@ namespace OrmBenchmark.Core
             throw new NotImplementedException();
         }
 
-        dynamic GetItemAsDynamic(int Id);
+        dynamic GetItemAsDynamic(int Id)
+        {
+            throw new NotImplementedException();
+        }
 
         IList<IPost> GetAllItemsAsObject()
         {
@@ -33,7 +38,25 @@ namespace OrmBenchmark.Core
             throw new NotImplementedException();
         }
 
-        IList<dynamic> GetAllItemsAsDynamic();
+        IList<dynamic> GetAllItemsAsDynamic()
+        {
+            throw new NotImplementedException();
+        }
+
+        Task MultipleInsertAsync(int numberOfRecords)
+        {
+            throw new NotImplementedException();
+        }
+
+        Task BulkUpdateAsync(int numberOfRecords)
+        {
+            throw new NotImplementedException();
+        }
+
+        Task BulkDeleteAsync(int numberOfRecords)
+        {
+            throw new NotImplementedException();
+        }
 
         void Finish();
     }

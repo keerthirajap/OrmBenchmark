@@ -12,16 +12,18 @@ namespace OrmBenchmark.OrmToolkit
 {
     public class OrmToolkitNoQueryExecuter : IOrmExecuter
     {
-        SqlConnection conn;
-        QueryOption option;
+        private SqlConnection conn;
+        private QueryOption option;
 
-        public string Name
+        public string TestName
         {
             get
             {
                 return "OrmToolkit (No Query)";
             }
         }
+
+        public string ORMName => "Insight Database";
 
         public void Init(string connectionStrong)
         {
@@ -30,7 +32,6 @@ namespace OrmBenchmark.OrmToolkit
 
             option = new QueryOption()
             {
-
             };
 
             OrmToolkitSettings.ObjectFactory = new ObjectFactory2();
@@ -60,10 +61,10 @@ namespace OrmBenchmark.OrmToolkit
         {
             return conn.GetAll("Posts", null, null).ToList();
         }
+
         public void Finish()
         {
             conn.Close();
         }
-
     }
 }
