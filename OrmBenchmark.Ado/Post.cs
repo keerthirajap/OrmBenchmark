@@ -1,7 +1,7 @@
 ﻿using OrmBenchmark.Core;
 using System;
 
-namespace OrmBenchmark.Ado
+namespace OrmBenchmark.Ado.SystemDataSqlClient
 {
     public class Post : IPost
     {

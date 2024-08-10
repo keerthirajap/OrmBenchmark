@@ -4,6 +4,7 @@ using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace OrmBenchmark.Core
 {
@@ -35,7 +36,7 @@ namespace OrmBenchmark.Core
             executers.Add(executer);
         }
 
-        public void Run(bool warmUp = false)
+        public async Task Run(bool warmUp = false)
         {
             PrepareDatabase();
 
@@ -48,64 +49,75 @@ namespace OrmBenchmark.Core
             var rand = new Random();
             foreach (IOrmExecuter executer in executers.OrderBy(ignore => rand.Next()))
             {
+                Console.WriteLine($"\nRunning benchmark for {executer.Name}...");
                 executer.Init(ConnectionString);
 
-                // Warm-up
-                if (warmUp)
+                // Exception handling for each executer
+                try
                 {
-                    Stopwatch watchForWaemUp = new Stopwatch();
-                    watchForWaemUp.Start();
-                    executer.GetItemAsObject(IterationCount + 1);
-                    executer.GetItemAsDynamic(IterationCount + 1);
-                    watchForWaemUp.Stop();
-                    resultsWarmUp.Add(new BenchmarkResult { Name = executer.Name, ExecTime = watchForWaemUp.ElapsedMilliseconds });
-                }
+                    // Warm-up
+                    if (warmUp)
+                    {
+                        Stopwatch watchForWaemUp = new Stopwatch();
+                        watchForWaemUp.Start();
+                        await executer.GetItemAsObjectAsync(IterationCount + 1);
+                        await executer.GetItemAsObjectAsync(IterationCount + 1);
+                        watchForWaemUp.Stop();
+                        resultsWarmUp.Add(new BenchmarkResult { Name = executer.Name, ExecTime = watchForWaemUp.ElapsedMilliseconds });
+                    }
 
-                // Object
-                Stopwatch watch = new Stopwatch();
-                long firstItemExecTime = 0;
-                for (int i = 1; i <= IterationCount; i++)
+                    // Object
+                    Stopwatch watch = new Stopwatch();
+                    long firstItemExecTime = 0;
+                    for (int i = 1; i <= IterationCount; i++)
+                    {
+                        watch.Start();
+                        var obj = executer.GetItemAsObject(i);
+                        watch.Stop();
+                        //if (obj?.Id != i)
+                        //    throw new ApplicationException("Invalid object returned.");
+                        if (i == 1)
+                            firstItemExecTime = watch.ElapsedMilliseconds;
+                    }
+                    results.Add(new BenchmarkResult { Name = executer.Name, ExecTime = watch.ElapsedMilliseconds, FirstItemExecTime = firstItemExecTime });
+
+                    // Dynamic
+                    Stopwatch watchForDynamic = new Stopwatch();
+                    firstItemExecTime = 0;
+                    for (int i = 1; i <= IterationCount; i++)
+                    {
+                        watchForDynamic.Start();
+                        var dynamicObj = executer.GetItemAsDynamic(i);
+                        watchForDynamic.Stop();
+                        //if (dynamicObj?.Id != i)
+                        //    throw new ApplicationException("Invalid object returned.");
+                        if (i == 1)
+                            firstItemExecTime = watchForDynamic.ElapsedMilliseconds;
+                    }
+                    resultsForDynamicItem.Add(new BenchmarkResult { Name = executer.Name, ExecTime = watchForDynamic.ElapsedMilliseconds, FirstItemExecTime = firstItemExecTime });
+
+                    // All Objects
+                    Stopwatch watchForAllItems = new Stopwatch();
+                    watchForAllItems.Start();
+
+                    var result = await executer.GetAllItemsAsObjectAsync();
+
+                    watchForAllItems.Stop();
+                    resultsForAllItems.Add(new BenchmarkResult { Name = executer.Name, ExecTime = watchForAllItems.ElapsedMilliseconds });
+
+                    // All Dynamics
+                    Stopwatch watchForAllDynamicItems = new Stopwatch();
+                    watchForAllDynamicItems.Start();
+                    executer.GetAllItemsAsDynamic();
+                    watchForAllDynamicItems.Stop();
+                    resultsForAllDynamicItems.Add(new BenchmarkResult { Name = executer.Name, ExecTime = watchForAllDynamicItems.ElapsedMilliseconds });
+
+                    executer.Finish();
+                }
+                catch (Exception ex)
                 {
-                    watch.Start();
-                    var obj = executer.GetItemAsObject(i);
-                    watch.Stop();
-                    //if (obj?.Id != i)
-                    //    throw new ApplicationException("Invalid object returned.");
-                    if (i == 1)
-                        firstItemExecTime = watch.ElapsedMilliseconds;
+                    Console.WriteLine($"Error during {executer.Name} benchmark: {ex.Message}");
                 }
-                results.Add(new BenchmarkResult { Name = executer.Name, ExecTime = watch.ElapsedMilliseconds, FirstItemExecTime = firstItemExecTime });
-
-                // Dynamic
-                Stopwatch watchForDynamic = new Stopwatch();
-                firstItemExecTime = 0;
-                for (int i = 1; i <= IterationCount; i++)
-                {
-                    watchForDynamic.Start();
-                    var dynamicObj = executer.GetItemAsDynamic(i);
-                    watchForDynamic.Stop();
-                    //if (dynamicObj?.Id != i)
-                    //    throw new ApplicationException("Invalid object returned.");
-                    if (i == 1)
-                        firstItemExecTime = watchForDynamic.ElapsedMilliseconds;
-                }
-                resultsForDynamicItem.Add(new BenchmarkResult { Name = executer.Name, ExecTime = watchForDynamic.ElapsedMilliseconds, FirstItemExecTime = firstItemExecTime });
-
-                // All Objects
-                Stopwatch watchForAllItems = new Stopwatch();
-                watchForAllItems.Start();
-                executer.GetAllItemsAsObject();
-                watchForAllItems.Stop();
-                resultsForAllItems.Add(new BenchmarkResult { Name = executer.Name, ExecTime = watchForAllItems.ElapsedMilliseconds });
-
-                // All Dynamics
-                Stopwatch watchForAllDynamicItems = new Stopwatch();
-                watchForAllDynamicItems.Start();
-                executer.GetAllItemsAsDynamic();
-                watchForAllDynamicItems.Stop();
-                resultsForAllDynamicItems.Add(new BenchmarkResult { Name = executer.Name, ExecTime = watchForAllDynamicItems.ElapsedMilliseconds });
-
-                executer.Finish();
             }
         }
 
@@ -121,9 +133,9 @@ namespace OrmBenchmark.Core
                     begin
 	                    create table Posts
 	                    (
-		                    Id int identity primary key, 
-		                    [Text] varchar(max) not null, 
-		                    CreationDate datetime not null, 
+		                    Id int identity primary key,
+		                    [Text] varchar(max) not null,
+		                    CreationDate datetime not null,
 		                    LastChangeDate datetime not null,
 		                    Counter1 int,
 		                    Counter2 int,
@@ -135,8 +147,8 @@ namespace OrmBenchmark.Core
 		                    Counter8 int,
 		                    Counter9 int
 	                    )
-	   
-	                    set nocount on 
+
+	                    set nocount on
 
 	                    declare @i int
 	                    declare @c int
@@ -144,10 +156,10 @@ namespace OrmBenchmark.Core
 	                    set @i = 0
 
 	                    while @i <= 5001
-	                    begin 
+	                    begin
 		                    insert Posts ([Text], CreationDate, LastChangeDate) values (replicate('x', 2000), GETDATE(), GETDATE())
 		                    set @id = @@IDENTITY
-		
+
 		                    set @i = @i + 1
 	                    end
                     end";

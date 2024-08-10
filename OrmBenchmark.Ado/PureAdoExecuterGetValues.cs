@@ -5,11 +5,11 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Text;
 
-namespace OrmBenchmark.Ado
+namespace OrmBenchmark.Ado.SystemDataSqlClient
 {
     public class PureAdoExecuterGetValues : IOrmExecuter
     {
-        SqlConnection conn;
+        private SqlConnection conn;
 
         public string Name
         {
@@ -24,6 +24,7 @@ namespace OrmBenchmark.Ado
             conn = new SqlConnection(connectionStrong);
             conn.Open();
         }
+
         public IPost GetItemAsObject(int Id)
         {
             var cmd = conn.CreateCommand();
@@ -97,6 +98,5 @@ namespace OrmBenchmark.Ado
         {
             conn.Close();
         }
-
     }
 }

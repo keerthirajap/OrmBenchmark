@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0</TargetFrameworks>
+    <RootNamespace>OrmBenchmark.Ado.SystemDataSqlClient</RootNamespace>
+  </PropertyGroup>
+  
+  <!-- common NuGet package refs that affect all projects -->
+  <ItemGroup>
+    <ProjectReference Include="..\OrmBenchmark.Core\OrmBenchmark.Core.csproj" />
+  </ItemGroup>
+
+</Project>

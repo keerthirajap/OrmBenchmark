@@ -7,12 +7,13 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Versioning;
+using System.Threading.Tasks;
 
 namespace OrmBenchmark.ConsoleUI.NetCore
 {
-    class Program
+    internal class Program
     {
-        static void Main(string[] args)
+        private static async Task Main(string[] args)
         {
             // Set up configuration sources.
             var builder = new ConfigurationBuilder()
@@ -21,8 +22,8 @@ namespace OrmBenchmark.ConsoleUI.NetCore
            .AddEnvironmentVariables();
 
             IConfigurationRoot configuration = builder.Build();
-                        
-            string connStringName = configuration.GetValue<string>("DefaultConnectionStringName");
+
+            string connStringName = configuration["DefaultConnectionStringName"];
             string connStr = configuration.GetConnectionString(connStringName);
 
             // Set up data directory
@@ -34,41 +35,44 @@ namespace OrmBenchmark.ConsoleUI.NetCore
 
             var benchmarker = new Benchmarker(connStr, 500);
 
-            benchmarker.RegisterOrmExecuter(new Ado.PureAdoExecuter());
-            //benchmarker.RegisterOrmExecuter(new Ado.PureAdoExecuterGetValues());
-            //benchmarker.RegisterOrmExecuter(new SimpleData.SimpleDataExecuter());
-            benchmarker.RegisterOrmExecuter(new Dapper.DapperExecuter());
-            benchmarker.RegisterOrmExecuter(new Dapper.DapperBufferedExecuter());
-            benchmarker.RegisterOrmExecuter(new Dapper.DapperFirstOrDefaultExecuter());
-            benchmarker.RegisterOrmExecuter(new Dapper.DapperContribExecuter());
-            benchmarker.RegisterOrmExecuter(new PetaPoco.PetaPocoExecuter());
-            benchmarker.RegisterOrmExecuter(new PetaPoco.PetaPocoFastExecuter());
-            benchmarker.RegisterOrmExecuter(new PetaPoco.PetaPocoFetchExecuter());
-            benchmarker.RegisterOrmExecuter(new PetaPoco.PetaPocoFetchFastExecuter());
-            benchmarker.RegisterOrmExecuter(new OrmToolkit.OrmToolkitExecuter());
-            benchmarker.RegisterOrmExecuter(new OrmToolkit.OrmToolkitNoQueryExecuter());
-            //benchmarker.RegisterOrmExecuter(new OrmToolkit.OrmToolkitAutoMapperExecuter());
-            benchmarker.RegisterOrmExecuter(new OrmToolkit.OrmToolkitTestExecuter());
-            //benchmarker.RegisterOrmExecuter(new EntityFramework.EntityFrameworkExecuter());
-            benchmarker.RegisterOrmExecuter(new EntityFramework.EntityFrameworNoTrackingExecuter());
-            benchmarker.RegisterOrmExecuter(new InsightDatabase.InsightDatabaseExecuter());
-            benchmarker.RegisterOrmExecuter(new InsightDatabase.InsightSingleDatabaseExecuter());
-            benchmarker.RegisterOrmExecuter(new OrmLite.OrmLiteExecuter());
-            benchmarker.RegisterOrmExecuter(new OrmLite.OrmLiteNoQueryExecuter());
-            //benchmarker.RegisterOrmExecuter(new DevExpress.DevExpressQueryExecuter());
+            //benchmarker.RegisterOrmExecuter(new Ado.SystemDataSqlClient.PureAdoExecuter());
+            //benchmarker.RegisterOrmExecuter(new Ado.MicrosoftDataSqlClient.PureAdoExecuter());
+            ////benchmarker.RegisterOrmExecuter(new Ado.SystemDataSqlClient.PureAdoExecuterGetValues());
+            ////benchmarker.RegisterOrmExecuter(new SimpleData.SimpleDataExecuter());
+            //benchmarker.RegisterOrmExecuter(new Dapper.DapperExecuter());
+            //benchmarker.RegisterOrmExecuter(new Dapper.DapperBufferedExecuter());
+            //benchmarker.RegisterOrmExecuter(new Dapper.DapperFirstOrDefaultExecuter());
+            //benchmarker.RegisterOrmExecuter(new Dapper.DapperContribExecuter());
+            //benchmarker.RegisterOrmExecuter(new PetaPoco.PetaPocoExecuter());
+            //benchmarker.RegisterOrmExecuter(new PetaPoco.PetaPocoFastExecuter());
+            //benchmarker.RegisterOrmExecuter(new PetaPoco.PetaPocoFetchExecuter());
+            //benchmarker.RegisterOrmExecuter(new PetaPoco.PetaPocoFetchFastExecuter());
+            //benchmarker.RegisterOrmExecuter(new OrmToolkit.OrmToolkitExecuter());
+            //benchmarker.RegisterOrmExecuter(new OrmToolkit.OrmToolkitNoQueryExecuter());
+            ////benchmarker.RegisterOrmExecuter(new OrmToolkit.OrmToolkitAutoMapperExecuter());
+            //benchmarker.RegisterOrmExecuter(new OrmToolkit.OrmToolkitTestExecuter());
+            //////benchmarker.RegisterOrmExecuter(new EntityFramework.EntityFrameworkExecuter());
+            //////benchmarker.RegisterOrmExecuter(new EntityFramework.EntityFrameworNoTrackingExecuter());
+            //benchmarker.RegisterOrmExecuter(new InsightDatabase.InsightDatabaseExecuter());
+            //benchmarker.RegisterOrmExecuter(new InsightDatabase.InsightSingleDatabaseExecuter());
+            benchmarker.RegisterOrmExecuter(new InsightDatabase.InsightDatabaseConcurrencyStressTest());
+
+            //benchmarker.RegisterOrmExecuter(new OrmLite.OrmLiteExecuter());
+            //benchmarker.RegisterOrmExecuter(new OrmLite.OrmLiteNoQueryExecuter());
+            ////benchmarker.RegisterOrmExecuter(new DevExpress.DevExpressQueryExecuter());
 
             Console.WriteLine("ORM Benchmark");
 
-            Console.Write("\nDo you like to have a warm-up stage(y/[n])?");
-            var str = Console.ReadLine();
-            if (str.Trim().ToLower() == "y" || str.Trim().ToLower() == "yes")
-                warmUp = true;
+            //Console.Write("\nDo you like to have a warm-up stage(y/[n])?");
+            //var str = Console.ReadLine();
+            //if (str.Trim().ToLower() == "y" || str.Trim().ToLower() == "yes")
+            warmUp = true;
 
             var ver = Assembly.GetEntryAssembly()?.GetCustomAttribute<TargetFrameworkAttribute>()?.FrameworkName;
             Console.WriteLine(ver);
             Console.WriteLine("Connection string: {0}", connStr);
             Console.Write("\nRunning...");
-            benchmarker.Run(warmUp);
+            await benchmarker.Run(warmUp);
             Console.WriteLine("Finished.");
 
             Console.ForegroundColor = ConsoleColor.Red;
@@ -94,7 +98,7 @@ namespace OrmBenchmark.ConsoleUI.NetCore
             Console.ReadLine();
         }
 
-        static void ShowResults(List<BenchmarkResult> results, bool showFirstRun = false, bool ignoreZeroTimes = true)
+        private static void ShowResults(List<BenchmarkResult> results, bool showFirstRun = false, bool ignoreZeroTimes = true)
         {
             var defaultColor = Console.ForegroundColor;
             //Console.ForegroundColor = ConsoleColor.Gray;

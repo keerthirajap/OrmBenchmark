@@ -1,21 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
+using System.Data;
 using System.Text;
 using OrmBenchmark.Core;
 using System.Dynamic;
 
-namespace OrmBenchmark.Ado
+namespace OrmBenchmark.Ado.SystemDataSqlClient
 {
     public class PureAdoExecuter : IOrmExecuter
     {
-        SqlConnection conn;
+        private SqlConnection conn;
 
         public string Name
         {
             get
             {
-                return "ADO (Pure)";
+                return "SystemDataSqlClient ADO (Pure)";
             }
         }
 
@@ -24,6 +25,7 @@ namespace OrmBenchmark.Ado
             conn = new SqlConnection(connectionStrong);
             conn.Open();
         }
+
         public IPost GetItemAsObject(int Id)
         {
             var cmd = conn.CreateCommand();
@@ -168,6 +170,5 @@ namespace OrmBenchmark.Ado
         {
             conn.Close();
         }
-
     }
 }

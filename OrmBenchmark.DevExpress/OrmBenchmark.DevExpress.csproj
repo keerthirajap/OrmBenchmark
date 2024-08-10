@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net46</TargetFrameworks>
+	  <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
 
   <!-- common NuGet package refs that affect all projects -->
@@ -15,7 +15,7 @@
     <DefineConstants>NETCORE;NETSTANDARD;NETSTANDARD2_0</DefineConstants>
   </PropertyGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0'">
-    <PackageReference Include="DevExpress.Xpo" Version="19.1.2" />
+    <PackageReference Include="DevExpress.Xpo" Version="24.1.4" />
   </ItemGroup>
 
 

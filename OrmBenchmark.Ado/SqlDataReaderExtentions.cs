@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Text;
 
-namespace OrmBenchmark.Ado
+namespace OrmBenchmark.Ado.SystemDataSqlClient
 {
     public static class SqlDataReaderExtentions
     {

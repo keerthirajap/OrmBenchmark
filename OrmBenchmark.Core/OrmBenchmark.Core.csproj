@@ -1,26 +1,27 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net46</TargetFrameworks>
+	  <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>OrmBenchmark.Core</RootNamespace>
   </PropertyGroup>
 
-  <!-- common NuGet package refs that affect all projects -->
   <ItemGroup>
-    
+    <PackageReference Include="System.Data.SqlClient" Version="4.8.6" />
   </ItemGroup>
 
+  <!-- common NuGet package refs that affect all projects -->
 
-  <!-- .NET Standard 2.0 references, compilation flags and build options -->
+
+  <!-- .NET Standard 2.0 references, compilation flags and build options --><!--
   <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard2.0'">
     <DefineConstants>NETCORE;NETSTANDARD;NETSTANDARD2_0</DefineConstants>
   </PropertyGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0'">
-    <PackageReference Include="System.Data.SqlClient" Version="4.5.1" />
-  </ItemGroup>
+    <PackageReference Include="System.Data.SqlClient" Version="4.8.6" />
+  </ItemGroup>-->
 
 
-  <!-- .NET 4.5 references, compilation flags and build options -->
+  <!-- .NET 4.5 references, compilation flags and build options --><!--
   <ItemGroup Condition=" '$(TargetFramework)' == 'net46' ">
     <Reference Include="mscorlib" />
     <Reference Include="System" />
@@ -35,5 +36,5 @@
   </ItemGroup>
   <PropertyGroup Condition=" '$(TargetFramework)' == 'net46'">
     <DefineConstants>NET46;NETFULL</DefineConstants>
-  </PropertyGroup>
+  </PropertyGroup>-->
 </Project>
